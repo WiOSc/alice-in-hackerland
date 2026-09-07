@@ -104,7 +104,7 @@ export default function BorderlandTetris() {
   const [soundOn, setSoundOn] = React.useState(true);
   const sounds = useSoundEngine(soundOn);
   const prevLines = useRef(0);
-  const prevLevel = useRef(6);
+  const prevLevel = useRef(4);
   const prevState = useRef<string>('PLAYING');
 
   usePreventScrollKeys();
@@ -300,7 +300,7 @@ export default function BorderlandTetris() {
         color: 'rgba(139,134,125,0.5)', textTransform: 'uppercase',
         letterSpacing: '0.15em', zIndex: 2, flexShrink: 0,
       }}>
-        Starts at Level 6 · Level up every 10 lines
+        Starts at Level 4 · Level up every 10 lines
       </p>
     </div>
   );
