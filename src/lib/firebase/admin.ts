@@ -2,15 +2,23 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
-if (!getApps().length) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
+const firebaseAdminConfig = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+};
+
+if (!getApps().length && firebaseAdminConfig.privateKey) {
+  try {
+    initializeApp({
+      credential: cert(firebaseAdminConfig as any),
+    });
+  } catch (error) {
+    console.error('Firebase Admin Init Error:', error);
+  }
 }
 
-export const adminAuth = getAuth();
-export const adminDb = getFirestore();
+const app = getApps().length ? getApps()[0] : null;
+
+export const adminAuth = app ? getAuth(app) : null as unknown as ReturnType<typeof getAuth>;
+export const adminDb = app ? getFirestore(app) : null as unknown as ReturnType<typeof getFirestore>;

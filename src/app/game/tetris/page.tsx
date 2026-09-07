@@ -1,20 +1,17 @@
 import React from 'react';
-import Tetris from '@/components/game/tetris';
+import TetrisWrapper from '@/components/game/tetris-wrapper';
 
 export const metadata = {
-  title: 'Wonderland Tetris - WIOS Platform',
-  description: 'An Alice in Wonderland themed Tetris game for the WIOS Platform.',
+  title: 'Borderland Tetris — WIOS',
+  description: 'Alice in Borderland themed Tetris game.',
 };
 
 export default function TetrisPage() {
   return (
-    <div className="aih-scope min-h-screen flex items-center justify-center relative">
-      <div className="aih-scanlines"></div>
-      <div className="aih-vignette"></div>
-      
-      <div className="aih-inner w-full flex flex-col items-center justify-center relative z-10">
-        <Tetris />
-      </div>
+    <div style={{ background: '#0a0a0a', minHeight: '100vh', position: 'relative' }}>
+      <div className="aih-scanlines" />
+      <TetrisWrapper />
     </div>
   );
 }
+
