@@ -1,10 +1,10 @@
 import LoginForm from '@/components/auth/login-form';
+import { LoginLayoutUI } from '@/components/ui/login-layout';
 
 export default function LoginPage() {
   return (
-    <div>
-      <h1>Team Login</h1>
+    <LoginLayoutUI>
       <LoginForm expectedRole="team" />
-    </div>
+    </LoginLayoutUI>
   );
-}  //for testing 
+}

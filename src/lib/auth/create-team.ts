@@ -20,6 +20,7 @@ export async function createTeamAccount(email: string, teamId: string, teamName:
     teamId,
     teamName,
     email,
+    password: tempPassword,
     createdAt: new Date(),
   });
 
