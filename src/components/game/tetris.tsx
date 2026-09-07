@@ -1,276 +1,375 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import Tetris from 'react-tetris';
 
-export default function BorderlandTetris() {
-  const [isClient, setIsClient] = useState(false);
-  const [fontSize, setFontSize] = useState(14);
+// ─── Sound Engine (Web Audio API) ─────────────────────────────────────────────
+function useSoundEngine(enabled: boolean) {
+  const ctx = useRef<AudioContext | null>(null);
 
-  useEffect(() => {
-    setIsClient(true);
-    const calcSize = () => {
-      // Board is 10 cols wide, we want it to fit nicely on screen
-      // Game board occupies ~50% of viewport width on desktop, ~90% on mobile
-      const vw = window.innerWidth;
-      if (vw < 480) setFontSize(Math.floor((vw * 0.80) / 10 / 1.25));
-      else if (vw < 768) setFontSize(Math.floor((vw * 0.60) / 10 / 1.25));
-      else setFontSize(16);
-    };
-    calcSize();
-    window.addEventListener('resize', calcSize);
-    return () => window.removeEventListener('resize', calcSize);
+  const getCtx = useCallback(() => {
+    if (!ctx.current) ctx.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    return ctx.current;
   }, []);
 
-  if (!isClient) return <div style={{ minHeight: '100vh', background: '#050505' }} />;
+  const playTone = useCallback((
+    frequency: number,
+    type: OscillatorType,
+    duration: number,
+    volume = 0.2,
+    startFreq?: number
+  ) => {
+    if (!enabled) return;
+    try {
+      const ac = getCtx();
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.type = type;
+      const now = ac.currentTime;
+      if (startFreq !== undefined) {
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(frequency, now + duration);
+      } else {
+        osc.frequency.setValueAtTime(frequency, now);
+      }
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch { /* audio not supported */ }
+  }, [enabled, getCtx]);
+
+  return useMemo(() => ({
+    move:      () => playTone(220, 'square', 0.05, 0.1),
+    rotate:    () => playTone(440, 'square', 0.07, 0.12, 280),
+    softDrop:  () => playTone(180, 'square', 0.04, 0.08),
+    hardDrop:  () => {
+      playTone(180, 'square', 0.06, 0.2, 280);
+      setTimeout(() => playTone(80, 'square', 0.1, 0.25), 60);
+    },
+    lineClear: (count: number) => {
+      [440, 554, 659, 880].slice(0, Math.min(count + 1, 4)).forEach((freq, i) => {
+        setTimeout(() => playTone(freq, 'triangle', 0.18, 0.3), i * 55);
+      });
+    },
+    levelUp: () => {
+      [523, 659, 784, 1047].forEach((freq, i) => {
+        setTimeout(() => playTone(freq, 'triangle', 0.15, 0.45), i * 75);
+      });
+    },
+    gameOver: () => {
+      [392, 349, 311, 262].forEach((freq, i) => {
+        setTimeout(() => playTone(freq, 'sawtooth', 0.3, 0.4), i * 110);
+      });
+    },
+  }), [playTone]);
+}
+
+// ─── Prevent arrow/space scroll ───────────────────────────────────────────────
+function usePreventScrollKeys() {
+  useEffect(() => {
+    const KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ']);
+    const prevent = (e: KeyboardEvent) => { if (KEYS.has(e.key)) e.preventDefault(); };
+    window.addEventListener('keydown', prevent, { passive: false });
+    return () => window.removeEventListener('keydown', prevent);
+  }, []);
+}
+
+// ─── Responsive board font-size ───────────────────────────────────────────────
+function useBoardFontSize() {
+  const [fs, setFs] = React.useState(13);
+  useEffect(() => {
+    const update = () => {
+      // Board = 10 cols × 1.25em + sidepanels (~5.5em×2) + gaps
+      // Height: 20 rows × 1.25em = 25em, need header (~90px) + footer (~30px)
+      const availH = window.innerHeight - 130;
+      const availW = window.innerWidth - 20;
+      const fromH = availH / 25;           // height constraint
+      const fromW = availW / 24.5;         // width constraint (board + 2 panels + gaps)
+      setFs(Math.floor(Math.max(8, Math.min(fromH, fromW, 20))));
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+  return fs;
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+// Site palette: bg #0b0b0d · text #ece7d8 · red #c81e38 · green #3f9d72 · muted #8b867d
+export default function BorderlandTetris() {
+  const fontSize = useBoardFontSize();
+  const [soundOn, setSoundOn] = React.useState(true);
+  const sounds = useSoundEngine(soundOn);
+  const prevLines = useRef(0);
+  const prevLevel = useRef(6);
+  const prevState = useRef<string>('PLAYING');
+
+  usePreventScrollKeys();
 
   return (
     <div style={{
-      minHeight: '100vh',
       width: '100%',
-      background: '#0a0a0a',
+      height: '100dvh',
+      overflow: 'hidden',
+      background: '#0b0b0d',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '24px 16px',
+      padding: '10px 8px',
+      boxSizing: 'border-box',
+      fontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, monospace",
       position: 'relative',
-      overflow: 'hidden',
-      fontFamily: 'ui-monospace, SFMono-Regular, monospace',
     }}>
-      {/* Background card suits */}
-      {['♠', '♥', '♣', '♦'].map((suit, i) => (
+      {/* Scanlines (same as main site) */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        backgroundImage: 'repeating-linear-gradient(to bottom, rgba(236,231,216,0.025) 0px, rgba(236,231,216,0.025) 1px, transparent 1px, transparent 3px)',
+        mixBlendMode: 'overlay',
+        zIndex: 1,
+      }} />
+
+      {/* Faint card suits */}
+      {(['♠', '♥', '♣', '♦'] as const).map((suit, i) => (
         <div key={suit} style={{
           position: 'absolute',
-          fontSize: '120px',
-          opacity: 0.05,
+          fontSize: 'clamp(60px, 14vw, 130px)',
+          opacity: 0.04,
           pointerEvents: 'none',
           userSelect: 'none',
-          color: i % 2 === 1 ? '#dc2626' : '#fff',
-          top: i < 2 ? '10%' : undefined,
-          bottom: i >= 2 ? '10%' : undefined,
-          left: i % 2 === 0 ? '5%' : undefined,
-          right: i % 2 === 1 ? '5%' : undefined,
+          color: i % 2 === 1 ? '#c81e38' : '#ece7d8',
+          top: i < 2 ? '4%' : undefined,
+          bottom: i >= 2 ? '4%' : undefined,
+          left: i % 2 === 0 ? '2%' : undefined,
+          right: i % 2 === 1 ? '2%' : undefined,
+          lineHeight: 1,
+          zIndex: 0,
         }}>{suit}</div>
       ))}
 
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '24px', zIndex: 10 }}>
-        <h1 style={{
-          fontFamily: 'Unbounded, ui-sans-serif, system-ui, sans-serif',
-          fontSize: 'clamp(20px, 4vw, 40px)',
-          fontWeight: 800,
-          color: '#fff',
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          margin: 0,
-          paddingBottom: '8px',
-          borderBottom: '2px solid #dc2626',
-          textShadow: '0 0 20px rgba(220,38,38,0.8)',
-        }}>
-          GAME: TETRIS
-        </h1>
+      <div style={{ textAlign: 'center', marginBottom: '8px', zIndex: 2, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <h1 style={{
+            fontFamily: "'Unbounded', ui-sans-serif, sans-serif",
+            fontSize: 'clamp(13px, 3vw, 24px)',
+            fontWeight: 800,
+            color: '#ece7d8',
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            margin: 0,
+            paddingBottom: '4px',
+            borderBottom: '1px solid rgba(139,134,125,0.3)',
+          }}>GAME: TETRIS</h1>
+          <button
+            onClick={() => setSoundOn(v => !v)}
+            style={{
+              background: 'none',
+              border: '1px solid rgba(139,134,125,0.3)',
+              borderRadius: '2px',
+              padding: '2px 7px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              color: '#8b867d',
+              lineHeight: 1.4,
+            }}
+          >{soundOn ? '🔊' : '🔇'}</button>
+        </div>
         <p style={{
-          fontSize: '11px',
-          color: '#dc2626',
+          fontSize: 'clamp(8px, 1.6vw, 10px)',
+          color: '#c81e38',
           textTransform: 'uppercase',
           letterSpacing: '0.2em',
-          marginTop: '8px',
+          margin: '4px 0 0',
+          fontFamily: "'JetBrains Mono', monospace",
         }}>
-          Difficulty: <span style={{ color: '#fff' }}>Queen of Spades ♠</span>
+          Difficulty: <span style={{ color: '#8b867d' }}>Queen of Spades ♠</span>
         </p>
       </div>
 
-      {/* Game area — font-size drives block size via em units */}
-      <div style={{ fontSize: `${fontSize}px`, zIndex: 10 }}>
+      {/* Game area — font-size drives em-based block sizing */}
+      <div style={{ fontSize: `${fontSize}px`, zIndex: 2, flexShrink: 0 }}>
         <Tetris
           keyboardControls={{
-            down: 'MOVE_DOWN',
-            left: 'MOVE_LEFT',
-            right: 'MOVE_RIGHT',
-            space: 'HARD_DROP',
-            z: 'FLIP_COUNTERCLOCKWISE',
-            x: 'FLIP_CLOCKWISE',
-            up: 'FLIP_CLOCKWISE',
-            p: 'TOGGLE_PAUSE',
-            c: 'HOLD',
-            shift: 'HOLD',
+            down: 'MOVE_DOWN', left: 'MOVE_LEFT', right: 'MOVE_RIGHT',
+            space: 'HARD_DROP', z: 'FLIP_COUNTERCLOCKWISE', x: 'FLIP_CLOCKWISE',
+            up: 'FLIP_CLOCKWISE', p: 'TOGGLE_PAUSE', c: 'HOLD', shift: 'HOLD',
           }}
         >
-          {({ HeldPiece, Gameboard, PieceQueue, points, linesCleared, level, state, controller }) => (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-              
-              {/* LEFT: Hold + Stats */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '7em' }}>
-                {/* Hold */}
-                <div style={panelStyle}>
-                  <div style={labelStyle}>Hold</div>
-                  <HeldPiece />
-                </div>
+          {({ HeldPiece, Gameboard, PieceQueue, points, linesCleared, level, state, controller }) => {
+            // Sound triggers (run synchronously in render — safe since they're side-effect-only)
+            if (typeof window !== 'undefined') {
+              if (linesCleared !== prevLines.current) {
+                const diff = linesCleared - prevLines.current;
+                if (diff > 0) sounds.lineClear(Math.min(diff, 4));
+                prevLines.current = linesCleared;
+              }
+              if (level !== prevLevel.current) { sounds.levelUp(); prevLevel.current = level; }
+              if (state !== prevState.current && state === 'LOST') sounds.gameOver();
+              prevState.current = state;
+            }
 
-                {/* Stats */}
-                {[
-                  { label: 'Score', value: points, accent: '#dc2626' },
-                  { label: 'Level', value: level, accent: '#fff' },
-                  { label: 'Lines', value: linesCleared, accent: '#555' },
-                ].map(({ label, value, accent }) => (
-                  <div key={label} style={{
-                    background: '#111',
-                    borderLeft: `3px solid ${accent}`,
-                    padding: '6px 8px',
+            const ctrl = {
+              ...controller,
+              moveLeft:             () => { sounds.move();     controller.moveLeft(); },
+              moveRight:            () => { sounds.move();     controller.moveRight(); },
+              moveDown:             () => { sounds.softDrop(); controller.moveDown(); },
+              hardDrop:             () => { sounds.hardDrop(); controller.hardDrop(); },
+              flipClockwise:        () => { sounds.rotate();   controller.flipClockwise(); },
+              flipCounterclockwise: () => { sounds.rotate();   controller.flipCounterclockwise(); },
+            };
+
+            return (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5em' }}>
+
+                {/* LEFT */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3em', width: '5.5em', flexShrink: 0 }}>
+                  <SidePanel label="Hold"><HeldPiece /></SidePanel>
+                  <Stat label="Score" value={points}       accent="#c81e38" />
+                  <Stat label="Level" value={level}        accent="#ece7d8" />
+                  <Stat label="Lines" value={linesCleared} accent="#3f9d72" />
+                  {/* Keys cheatsheet */}
+                  <div style={{
+                    background: 'rgba(236,231,216,0.02)',
+                    border: '1px solid rgba(139,134,125,0.18)',
+                    padding: '0.45em 0.5em',
+                    fontSize: '0.48em',
+                    color: '#8b867d',
+                    lineHeight: 1.9,
+                    marginTop: '0.2em',
                   }}>
-                    <div style={{ ...labelStyle, marginBottom: '2px' }}>{label}</div>
-                    <div style={{ color: '#fff', fontSize: '1.2em', fontWeight: 700 }}>{value}</div>
+                    <div style={{ color: 'rgba(236,231,216,0.6)', marginBottom: '0.3em', borderBottom: '1px solid rgba(139,134,125,0.18)', paddingBottom: '0.25em', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Keys</div>
+                    {[['↑/X','Rotate'],['←→','Move'],['↓','Soft'],['SPC','Drop'],['C','Hold'],['P','Pause']].map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: '4px' }}>
+                        <span style={{ color: '#c81e38' }}>{k}</span><span>{v}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-
-                {/* Controls */}
-                <div style={{ ...panelStyle, marginTop: '8px', fontSize: '0.6em', lineHeight: 1.8, color: '#666' }}>
-                  <div style={{ ...labelStyle, color: '#aaa', marginBottom: '4px', borderBottom: '1px solid #333', paddingBottom: '4px' }}>Controls</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Rotate</span><span style={{ color: '#dc2626' }}>↑/X</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Move</span><span style={{ color: '#dc2626' }}>←→</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Soft</span><span style={{ color: '#dc2626' }}>↓</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Drop</span><span style={{ color: '#dc2626' }}>SPC</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Hold</span><span style={{ color: '#dc2626' }}>C</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Pause</span><span style={{ color: '#dc2626' }}>P</span></div>
                 </div>
+
+                {/* BOARD */}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <div style={{
+                    border: '1px solid rgba(139,134,125,0.25)',
+                    background: '#050507',
+                    position: 'relative',
+                  }}>
+                    <Gameboard />
+
+                    {state === 'LOST' && (
+                      <Overlay>
+                        <div style={{ ...overlayTitle, color: '#c81e38' }}>GAME OVER</div>
+                        <div style={{ color: '#8b867d', fontSize: '0.45em', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.9em' }}>Visa Expired</div>
+                        <Btn onClick={controller.restart} color="#c81e38">RETRY</Btn>
+                      </Overlay>
+                    )}
+                    {state === 'PAUSED' && (
+                      <Overlay>
+                        <div style={{ ...overlayTitle, color: '#ece7d8' }}>PAUSED</div>
+                        <Btn onClick={controller.resume} color="#3f9d72">RESUME</Btn>
+                      </Overlay>
+                    )}
+                  </div>
+
+                  {/* Touch controls */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '2px', marginTop: '3px' }}>
+                    <TBtn onClick={ctrl.flipCounterclockwise}>↺</TBtn>
+                    <TBtn onClick={ctrl.moveLeft}>←</TBtn>
+                    <TBtn onClick={ctrl.moveDown}>↓</TBtn>
+                    <TBtn onClick={ctrl.moveRight}>→</TBtn>
+                    <TBtn onClick={ctrl.hardDrop} red>⇓</TBtn>
+                  </div>
+                </div>
+
+                {/* RIGHT */}
+                <div style={{ width: '5.5em', flexShrink: 0 }}>
+                  <SidePanel label="Next"><PieceQueue /></SidePanel>
+                </div>
+
               </div>
-
-              {/* CENTER: Game Board */}
-              <div style={{ position: 'relative' }}>
-                <div style={{
-                  border: '3px solid #222',
-                  background: '#000',
-                  boxShadow: '0 0 40px rgba(220,38,38,0.2), inset 0 0 20px rgba(0,0,0,0.9)',
-                  position: 'relative',
-                }}>
-                  <Gameboard />
-
-                  {/* Game Over overlay */}
-                  {state === 'LOST' && (
-                    <div style={{
-                      position: 'absolute', inset: 0,
-                      background: 'rgba(0,0,0,0.88)',
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', justifyContent: 'center',
-                      zIndex: 30,
-                      border: '2px solid #dc2626',
-                    }}>
-                      <div style={{
-                        fontFamily: 'Unbounded, ui-sans-serif, sans-serif',
-                        fontSize: '1.4em', fontWeight: 800,
-                        color: '#dc2626', textTransform: 'uppercase',
-                        letterSpacing: '0.1em', marginBottom: '4px',
-                        textShadow: '0 0 20px #dc2626',
-                      }}>Game Over</div>
-                      <div style={{ color: '#888', fontSize: '0.7em', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px' }}>Visa Expired</div>
-                      <button
-                        onClick={controller.restart}
-                        style={btnStyle}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#b91c1c')}
-                        onMouseLeave={e => (e.currentTarget.style.background = '#dc2626')}
-                      >
-                        RETRY
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Paused overlay */}
-                  {state === 'PAUSED' && (
-                    <div style={{
-                      position: 'absolute', inset: 0,
-                      background: 'rgba(0,0,0,0.75)',
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', justifyContent: 'center',
-                      zIndex: 30,
-                    }}>
-                      <div style={{
-                        fontFamily: 'Unbounded, ui-sans-serif, sans-serif',
-                        fontSize: '1.4em', fontWeight: 800,
-                        color: '#fff', textTransform: 'uppercase',
-                        letterSpacing: '0.1em', marginBottom: '16px',
-                      }}>PAUSED</div>
-                      <button
-                        onClick={controller.resume}
-                        style={{ ...btnStyle, background: '#fff', color: '#000' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#ddd')}
-                        onMouseLeave={e => (e.currentTarget.style.background = '#fff')}
-                      >
-                        RESUME
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Mobile touch controls — below the board */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: '4px',
-                  marginTop: '8px',
-                }}>
-                  <div />
-                  <button style={mobileBtn} onClick={controller.flipClockwise}>↻</button>
-                  <div />
-                  <button style={mobileBtn} onClick={controller.moveLeft}>←</button>
-                  <button style={mobileBtn} onClick={controller.moveDown}>↓</button>
-                  <button style={mobileBtn} onClick={controller.moveRight}>→</button>
-                  <div />
-                  <button style={{ ...mobileBtn, background: '#7f1d1d', fontSize: '1em' }} onClick={controller.hardDrop}>⇓</button>
-                  <div />
-                </div>
-              </div>
-
-              {/* RIGHT: Next queue */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '7em' }}>
-                <div style={panelStyle}>
-                  <div style={labelStyle}>Next</div>
-                  <PieceQueue />
-                </div>
-              </div>
-
-            </div>
-          )}
+            );
+          }}
         </Tetris>
       </div>
+
+      <p style={{
+        marginTop: '6px', fontSize: 'clamp(7px, 1.3vw, 9px)',
+        color: 'rgba(139,134,125,0.5)', textTransform: 'uppercase',
+        letterSpacing: '0.15em', zIndex: 2, flexShrink: 0,
+      }}>
+        Starts at Level 6 · Level up every 10 lines
+      </p>
     </div>
   );
 }
 
-const panelStyle: React.CSSProperties = {
-  background: '#111',
-  border: '1px solid #222',
-  padding: '8px',
-};
+/* ── Sub-components ── */
+function SidePanel({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ background: 'rgba(236,231,216,0.02)', border: '1px solid rgba(139,134,125,0.2)', padding: '0.45em 0.5em' }}>
+      <div style={{ fontSize: '0.5em', color: '#8b867d', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: '0.3em' }}>{label}</div>
+      {children}
+    </div>
+  );
+}
 
-const labelStyle: React.CSSProperties = {
-  fontSize: '0.65em',
-  color: '#666',
-  textTransform: 'uppercase',
-  letterSpacing: '0.15em',
-  fontWeight: 700,
-  marginBottom: '6px',
-};
+function Stat({ label, value, accent }: { label: string; value: number; accent: string }) {
+  return (
+    <div style={{
+      background: 'rgba(236,231,216,0.02)',
+      border: '1px solid rgba(139,134,125,0.2)',
+      borderLeft: `2px solid ${accent}`,
+      padding: '0.32em 0.5em',
+    }}>
+      <div style={{ fontSize: '0.48em', color: '#8b867d', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</div>
+      <div style={{ color: '#ece7d8', fontSize: '1em', fontWeight: 700 }}>{value}</div>
+    </div>
+  );
+}
 
-const btnStyle: React.CSSProperties = {
-  background: '#dc2626',
-  color: '#fff',
-  border: 'none',
-  padding: '8px 20px',
-  fontSize: '0.8em',
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: '0.15em',
-  cursor: 'pointer',
-  transition: 'background 0.15s',
-};
+function TBtn({ onClick, children, red }: { onClick: () => void; children: React.ReactNode; red?: boolean }) {
+  return (
+    <button onClick={onClick} style={{
+      background: red ? 'rgba(200,30,56,0.15)' : 'rgba(236,231,216,0.03)',
+      color: red ? '#c81e38' : '#8b867d',
+      border: `1px solid ${red ? 'rgba(200,30,56,0.3)' : 'rgba(139,134,125,0.2)'}`,
+      padding: '0.55em 0', fontSize: '0.72em',
+      cursor: 'pointer', width: '100%', lineHeight: 1,
+      touchAction: 'manipulation', fontFamily: 'inherit',
+    }}>{children}</button>
+  );
+}
 
-const mobileBtn: React.CSSProperties = {
-  background: '#1c1c1c',
-  color: '#fff',
-  border: '1px solid #333',
-  padding: '10px 0',
-  fontSize: '0.9em',
-  cursor: 'pointer',
-  width: '100%',
+function Overlay({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, background: 'rgba(11,11,13,0.9)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', zIndex: 30,
+      border: '1px solid rgba(139,134,125,0.25)',
+    }}>{children}</div>
+  );
+}
+
+function Btn({ onClick, children, color }: { onClick: () => void; children: React.ReactNode; color: string }) {
+  return (
+    <button onClick={onClick} style={{
+      background: color, color: '#0b0b0d',
+      border: 'none', padding: '0.45em 1.1em',
+      fontSize: '0.55em', fontWeight: 700,
+      textTransform: 'uppercase', letterSpacing: '0.15em',
+      cursor: 'pointer', fontFamily: 'inherit',
+    }}>{children}</button>
+  );
+}
+
+/* ── Shared ── */
+const overlayTitle: React.CSSProperties = {
+  fontFamily: "'Unbounded', ui-sans-serif, sans-serif",
+  fontSize: '0.85em', fontWeight: 800,
+  textTransform: 'uppercase', letterSpacing: '0.1em',
+  marginBottom: '0.25em',
 };

@@ -285,45 +285,31 @@ h1.aih-display-login { margin: 0; font-size: 40px; line-height: 1.05; }
 }
 
 /* ----------------------------------------
-   Tetris Game Styles (Alice in Borderland Theme)
+   Tetris Game Styles (Alice in Borderland — Dark Theme)
+   Matches site palette: #0b0b0d bg · #ece7d8 text · #c81e38 red · #3f9d72 green
    ---------------------------------------- */
 
-/* The game board uses relative font sizing for responsiveness. 
-   By setting width/height to 1.5em, it scales with the parent font-size! */
+/* game-block size driven by parent font-size (em units = responsive) */
 .game-block {
   margin: 0;
   padding: 0;
   width: 1.25em;
   height: 1.25em;
-  border: 1px solid rgba(220, 38, 38, 0.15); /* dark red faint border */
+  border: 1px solid rgba(139, 134, 125, 0.12);
   box-sizing: border-box;
 }
 
-@media (min-width: 640px) {
-  .game-block {
-    width: 1.5em;
-    height: 1.5em;
-  }
-}
+/* Standard Tetris piece colors — bright enough to pop on dark board */
+.piece-i { background-color: #22d3ee; border-color: #06b6d4; } /* Cyan */
+.piece-j { background-color: #60a5fa; border-color: #3b82f6; } /* Blue */
+.piece-l { background-color: #fb923c; border-color: #f97316; } /* Orange */
+.piece-o { background-color: #facc15; border-color: #eab308; } /* Yellow */
+.piece-s { background-color: #4ade80; border-color: #22c55e; } /* Green */
+.piece-t { background-color: #c084fc; border-color: #a855f7; } /* Purple */
+.piece-z { background-color: #c81e38; border-color: #a61830; } /* Borderland Red */
 
-@media (min-width: 1024px) {
-  .game-block {
-    width: 1.8em;
-    height: 1.8em;
-  }
-}
-
-/* Piece Colors for Borderland: deep reds, dark greys, bloody colors */
-.piece-i { background-color: #8b0000; box-shadow: inset 0 0 8px rgba(0,0,0,0.8); } /* Dark Red */
-.piece-j { background-color: #550000; box-shadow: inset 0 0 8px rgba(0,0,0,0.8); } /* Very Dark Red */
-.piece-l { background-color: #ff3333; box-shadow: inset 0 0 8px rgba(0,0,0,0.8); } /* Bright Red */
-.piece-o { background-color: #aa0000; box-shadow: inset 0 0 8px rgba(0,0,0,0.8); } /* Crimson */
-.piece-s { background-color: #1a1a1a; box-shadow: inset 0 0 8px rgba(255,0,0,0.5); border-color: #333; } /* Dark Grey with red shadow */
-.piece-t { background-color: #ff0000; box-shadow: inset 0 0 10px rgba(0,0,0,0.9); } /* Pure Red */
-.piece-z { background-color: #333333; box-shadow: inset 0 0 8px rgba(255,0,0,0.5); border-color: #555; } /* Mid Grey with red shadow */
-
-/* Preview / Ghost Piece */
+/* Ghost / preview piece */
 .piece-preview {
-  background-color: rgba(220, 38, 38, 0.1); /* Faint red glow */
-  border: 1px dashed rgba(220, 38, 38, 0.6);
+  background-color: rgba(236, 231, 216, 0.04);
+  border: 1px dashed rgba(139, 134, 125, 0.3);
 }
