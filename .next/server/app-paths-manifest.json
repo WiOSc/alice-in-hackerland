@@ -1,0 +1,5 @@
+{
+  "/admin/leaderboard/page": "app/admin/leaderboard/page.js",
+  "/api/leaderboard/route": "app/api/leaderboard/route.js",
+  "/dashboard/leaderboard/page": "app/dashboard/leaderboard/page.js"
+}
