@@ -50,7 +50,7 @@ html, body { margin: 0; padding: 0; background: #0b0b0d; }
 }
 .aih-back:hover { color: #ece7d8; }
 
-.aih-main { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 2.5rem; padding: 3.5rem 0; text-align: center; }
+.aih-main { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: space-evenly; padding: 3.5rem 0; text-align: center; }
 .aih-main-login { gap: 2rem; padding: 3rem 0; }
 
 .aih-copy { max-width: 42rem; display: flex; flex-direction: column; align-items: center; }

@@ -65,9 +65,6 @@ export function HeroPreview() {
         <div className="aih-topbar aih-mono">
           <span className="code">VT26-E035</span>
           <span className="status">
-            <span className="aih-dot"></span>
-            registrations open
-            <span style={{ color: 'rgba(139,134,125,0.5)' }}>·</span>
             11–12 Sept 2026, VIT-AP, Amaravati
           </span>
         </div>
@@ -75,7 +72,7 @@ export function HeroPreview() {
         <div className="aih-main">
           <div className="aih-copy">
             <p className="aih-eyebrow aih-mono">hackathon · game-based rounds</p>
-            <h1 className="aih-display-hero aih-title-corrupt" id="mainTitle">
+            <h1 className="aih-display-hero" id="mainTitle">
               <span>Alice in</span>
               <span className="aih-glitch" data-text="Hackerland">Hackerland</span>
             </h1>
