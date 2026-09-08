@@ -3,7 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import type { CreateRoundInput, Round, UpdateRoundInput } from "../../types/round";
 
 const ROUNDS_COLLECTION = "rounds";
-
+/*
 export async function listRounds(): Promise<Round[]> {
   const snap = await adminDb
     .collection(ROUNDS_COLLECTION)
@@ -12,7 +12,19 @@ export async function listRounds(): Promise<Round[]> {
 
   return snap.docs.map((doc) => doc.data() as Round);
 }
+  */
+export async function listRounds(): Promise<Round[]> {
+  const snap = await adminDb
+    .collection(ROUNDS_COLLECTION)
+    .orderBy("roundNumber", "asc")
+    .get();
 
+  return snap.docs.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as Round),
+  }));
+}
+/*
 export async function getActiveRound(): Promise<Round | null> {
   const snap = await adminDb
     .collection(ROUNDS_COLLECTION)
@@ -22,6 +34,22 @@ export async function getActiveRound(): Promise<Round | null> {
 
   if (snap.empty) return null;
   return snap.docs[0].data() as Round;
+}
+*/
+export async function getActiveRound(): Promise<Round | null> {
+  const snap = await adminDb
+    .collection(ROUNDS_COLLECTION)
+    .where("active", "==", true)
+    .limit(1)
+    .get();
+
+  if (snap.empty) return null;
+
+  const doc = snap.docs[0];
+  return {
+    id: doc.id,
+    ...(doc.data() as Round),
+  };
 }
 
 export async function createRound(input: CreateRoundInput): Promise<Round> {

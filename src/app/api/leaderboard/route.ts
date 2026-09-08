@@ -5,15 +5,7 @@ import { getLeaderboard } from "../../../lib/firestore/leaderboard";
 import { adjustTeamPoints } from "../../../lib/firestore/teams";
 import { getActiveRound } from "../../../lib/firestore/rounds";
 import type { AssignPointsInput } from "../../../types/leaderboard";
-/*export async function GET() {
-  try {
-    await requireUser();
-    const leaderboard = await getLeaderboard();
-    return NextResponse.json({ leaderboard });
-  } catch (err) {
-    return handleError(err);
-  }
-}*/
+/*
 export async function GET() {
   try {
     const leaderboard = (await getLeaderboard()) || [];
@@ -22,6 +14,26 @@ export async function GET() {
     console.error("Firestore Fetch Error:", err);
     // Return empty list on failure instead of 500 server crash
     return NextResponse.json({ leaderboard: [] }, { status: 200 });
+  }
+}
+*/
+export async function GET() {
+  try {
+    const [activeRound, leaderboard] = await Promise.all([
+      getActiveRound(),
+      getLeaderboard(),
+    ]);
+
+    return NextResponse.json({
+      activeRoundName: activeRound ? activeRound.name : "No Active Round",
+      leaderboard: leaderboard || [],
+    });
+  } catch (err) {
+    console.error("Firestore Fetch Error:", err);
+    return NextResponse.json(
+      { activeRoundName: "No Active Round", leaderboard: [] },
+      { status: 200 }
+    );
   }
 }
 
