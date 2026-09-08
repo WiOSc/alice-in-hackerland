@@ -1,83 +1,53 @@
-import { adminDb } from "../../lib/firebase/admin";
-import type { Team } from "../../types/team";
-import type { RoundScoreEntry } from "../../types/leaderboard";
+'use server';
+import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { cookies } from 'next/headers';
+import { Timestamp } from 'firebase-admin/firestore';
+import crypto from 'crypto';
 
-const TEAMS_COLLECTION = "teams";
-const ROUND_SCORES_SUBCOLLECTION = "roundScores";
-
-export async function listTeams(): Promise<Team[]> {
-  const snap = await adminDb.collection(TEAMS_COLLECTION).get();
-  return snap.docs.map((doc) => ({
-    id: doc.id,
-    ...(doc.data() as Team),
-  }));
+async function getAdminDecoded() {
+  const cookieStore = await cookies();
+  const session = cookieStore.get('session')?.value;
+  if (!session) throw new Error('Unauthorized');
+  const decoded = await adminAuth.verifySessionCookie(session);
+  if (decoded.role !== 'admin') throw new Error('Forbidden');
+  return decoded;
 }
 
-export async function getTeam(teamId: string): Promise<Team | null> {
-  const doc = await adminDb.collection(TEAMS_COLLECTION).doc(teamId).get();
-  if (!doc.exists) return null;
-  return {
-    id: doc.id,
-    ...(doc.data() as Team),
-  };
-}
-
-export async function adjustTeamPoints(params: {
-  teamId: string;
-  roundId: string;
-  points: number;
-  note?: string;
-  adminUid: string;
-}): Promise<Team> {
-  const { teamId, roundId, points, note, adminUid } = params;
-  const teamRef = adminDb.collection(TEAMS_COLLECTION).doc(teamId);
-  const scoreRef = teamRef.collection(ROUND_SCORES_SUBCOLLECTION).doc(roundId);
-  const now = new Date().toISOString();
-
-  await adminDb.runTransaction(async (tx) => {
-    const teamDoc = await tx.get(teamRef);
-    if (!teamDoc.exists) throw new Error("Team not found");
-
-    const scoreDoc = await tx.get(scoreRef);
-    const previousRoundPoints = scoreDoc.exists
-      ? (scoreDoc.data() as RoundScoreEntry).points
-      : 0;
-
-    const entry: RoundScoreEntry = {
-      roundId,
-      points: previousRoundPoints + points,
-      note,
-      updatedAt: now,
-      updatedBy: adminUid,
+export async function listTeams() {
+  await getAdminDecoded();
+  const snapshot = await adminDb.collection('users').where('role', '==', 'team').get();
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      uid: doc.id,
+      role: data.role,
+      teamId: data.teamId ?? '',
+      teamName: data.teamName ?? '',
+      email: data.email ?? '',
+      password: data.password ?? '',
+      points: data.points ?? 0,
+      qualified: data.qualified ?? true,
+      createdAt: data.createdAt?.toDate?.()?.toISOString() ?? '',
     };
-
-    tx.set(scoreRef, entry, { merge: true });
-
-    const currentTotal = (teamDoc.data() as Team).totalPoints ?? 0;
-    tx.update(teamRef, {
-      totalPoints: currentTotal + points,
-      updatedAt: now,
-    });
   });
-
-  const updated = await teamRef.get();
-  return {
-    id: updated.id,
-    ...(updated.data() as Team),
-  };
 }
 
-export async function getRoundPointsForTeam(
-  teamId: string,
-  roundId: string
-): Promise<number> {
-  const doc = await adminDb
-    .collection(TEAMS_COLLECTION)
-    .doc(teamId)
-    .collection(ROUND_SCORES_SUBCOLLECTION)
-    .doc(roundId)
-    .get();
+export async function resetTeamPassword(uid: string) {
+  await getAdminDecoded();
+  const newPassword = crypto.randomBytes(6).toString('base64url');
+  await adminAuth.updateUser(uid, { password: newPassword });
+  await adminDb.collection('users').doc(uid).update({ password: newPassword });
+  return { newPassword };
+}
 
-  if (!doc.exists) return 0;
-  return (doc.data() as RoundScoreEntry).points;
+export async function updateTeamPoints(uid: string, points: number) {
+  await getAdminDecoded();
+  await adminDb.collection('users').doc(uid).update({ points });
+  return { points };
+}
+
+export async function toggleTeamQualified(uid: string, qualified: boolean) {
+  await getAdminDecoded();
+  await adminDb.collection('users').doc(uid).update({ qualified });
+  return { qualified };
 }

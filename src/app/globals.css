@@ -283,3 +283,52 @@ h1.aih-display-login { margin: 0; font-size: 40px; line-height: 1.05; }
 @media (prefers-reduced-motion: reduce) {
   .aih-title-corrupt { animation: none; }
 }
+
+/* ── Tabs ── */
+.aih-tabs {
+  display: flex; gap: 0.25rem; margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(139,134,125,0.25); padding-bottom: 0;
+}
+.aih-tab {
+  background: transparent; border: none; color: rgba(236,231,216,0.5);
+  padding: 0.5rem 1rem; font-size: 12px; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+}
+.aih-tab:hover { color: #ece7d8; }
+.aih-tab.active { color: #ece7d8; border-bottom-color: var(--aih-red); }
+
+/* ── Tables ── */
+.aih-table-wrap { overflow-x: auto; }
+.aih-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.aih-table th, .aih-table td {
+  text-align: left; padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(139,134,125,0.15);
+}
+.aih-table th {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px; color: #8b867d; font-weight: 500;
+}
+.aih-table td { color: rgba(236,231,216,0.85); }
+.aih-table tbody tr:hover { background: rgba(236,231,216,0.02); }
+
+.aih-table-btn {
+  background: transparent; border: 1px solid rgba(139,134,125,0.3);
+  color: rgba(236,231,216,0.7); padding: 0.25rem 0.6rem;
+  font-size: 11px; cursor: pointer; border-radius: 2px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  transition: border-color 0.15s, color 0.15s;
+}
+.aih-table-btn:hover { border-color: var(--aih-red); color: #ece7d8; }
+.aih-table-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Textarea ── */
+.aih-textarea {
+  width: 100%; background: rgba(236,231,216,0.03);
+  border: 1px solid rgba(139,134,125,0.3); border-radius: 2px;
+  padding: 0.65rem 0.75rem; color: #ece7d8; font-size: 14px;
+  outline: none; resize: vertical; transition: border-color 0.15s ease;
+}
+.aih-textarea::placeholder { color: rgba(139,134,125,0.6); }
+.aih-textarea:focus { border-color: var(--aih-green); }
