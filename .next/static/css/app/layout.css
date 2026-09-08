@@ -522,6 +522,9 @@
   .text-red-500 {
     color: var(--color-red-500);
   }
+  .text-white {
+    color: var(--color-white);
+  }
   .text-white\/30 {
     color: color-mix(in srgb, #fff 30%, transparent);
     @supports (color: color-mix(in lab, red, red)) {

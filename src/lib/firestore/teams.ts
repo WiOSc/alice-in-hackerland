@@ -4,12 +4,7 @@ import type { RoundScoreEntry } from "../../types/leaderboard";
 
 const TEAMS_COLLECTION = "teams";
 const ROUND_SCORES_SUBCOLLECTION = "roundScores";
-/*
-export async function listTeams(): Promise<Team[]> {
-  const snap = await adminDb.collection(TEAMS_COLLECTION).get();
-  return snap.docs.map((doc) => doc.data() as Team);
-}
-  */
+
 export async function listTeams(): Promise<Team[]> {
   const snap = await adminDb.collection(TEAMS_COLLECTION).get();
   return snap.docs.map((doc) => ({
@@ -17,12 +12,7 @@ export async function listTeams(): Promise<Team[]> {
     ...(doc.data() as Team),
   }));
 }
-/*
-export async function getTeam(teamId: string): Promise<Team | null> {
-  const doc = await adminDb.collection(TEAMS_COLLECTION).doc(teamId).get();
-  if (!doc.exists) return null;
-  return doc.data() as Team;
-}*/
+
 export async function getTeam(teamId: string): Promise<Team | null> {
   const doc = await adminDb.collection(TEAMS_COLLECTION).doc(teamId).get();
   if (!doc.exists) return null;
@@ -32,11 +22,6 @@ export async function getTeam(teamId: string): Promise<Team | null> {
   };
 }
 
-/**
- * Adds `points` (can be negative) to a team's total, for the given round,
- * and records the adjustment in teams/{teamId}/roundScores/{roundId} so
- * there's an audit trail of who awarded what and when.
- */
 export async function adjustTeamPoints(params: {
   teamId: string;
   roundId: string;
@@ -76,7 +61,10 @@ export async function adjustTeamPoints(params: {
   });
 
   const updated = await teamRef.get();
-  return updated.data() as Team;
+  return {
+    id: updated.id,
+    ...(updated.data() as Team),
+  };
 }
 
 export async function getRoundPointsForTeam(
