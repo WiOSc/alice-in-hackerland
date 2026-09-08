@@ -1,24 +1,27 @@
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 
-const firebaseAdminConfig = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-};
+// NOTE: If you already have lib/firebase/admin.ts wired up, keep your version —
+// this is provided so the rounds/leaderboard modules have something to import
+// against. Requires these env vars (server-only, never NEXT_PUBLIC_):
+//   FIREBASE_PROJECT_ID
+//   FIREBASE_CLIENT_EMAIL
+//   FIREBASE_PRIVATE_KEY  (with \n escaped, e.g. from a single-line .env value)
 
-if (!getApps().length && firebaseAdminConfig.privateKey) {
-  try {
-    initializeApp({
-      credential: cert(firebaseAdminConfig as any),
-    });
-  } catch (error) {
-    console.error('Firebase Admin Init Error:', error);
-  }
+function getAdminApp(): App {
+  const existing = getApps();
+  if (existing.length > 0) return existing[0];
+
+  return initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    }),
+  });
 }
 
-const app = getApps().length ? getApps()[0] : null;
-
-export const adminAuth = app ? getAuth(app) : null as unknown as ReturnType<typeof getAuth>;
-export const adminDb = app ? getFirestore(app) : null as unknown as ReturnType<typeof getFirestore>;
+export const adminApp = getAdminApp();
+export const adminDb = getFirestore(adminApp);
+export const adminAuth = getAuth(adminApp);
