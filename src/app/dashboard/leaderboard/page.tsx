@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { LeaderboardTable } from "../../../components/leaderboard/LeaderboardTable";
 import type { LeaderboardEntry } from "../../../types/leaderboard";
 import { useTeam } from "../../../hooks/useTeam";
@@ -40,13 +41,21 @@ export default function DashboardLeaderboardPage() {
             </p>
             <h1 className="mt-1 text-3xl font-bold text-[#f0e6d3]">Leaderboard</h1>
           </div>
-          <button
-            onClick={fetchLeaderboard}
-            disabled={loading}
-            className="rounded-md border border-white/15 px-4 py-2 font-mono text-sm text-white/70 transition hover:border-white/30 hover:text-[#f0e6d3] disabled:opacity-40"
-          >
-            {loading ? "Refreshing…" : "Refresh"}
-          </button>
+          <div className="flex gap-3">
+            <Link
+              href="/dashboard"
+              className="rounded-md border border-white/15 px-4 py-2 font-mono text-sm text-white/70 transition hover:border-white/30 hover:text-[#f0e6d3]"
+            >
+              Back to Dashboard
+            </Link>
+            <button
+              onClick={fetchLeaderboard}
+              disabled={loading}
+              className="rounded-md border border-white/15 px-4 py-2 font-mono text-sm text-white/70 transition hover:border-white/30 hover:text-[#f0e6d3] disabled:opacity-40"
+            >
+              {loading ? "Refreshing…" : "Refresh"}
+            </button>
+          </div>
         </div>
 
         {error && (

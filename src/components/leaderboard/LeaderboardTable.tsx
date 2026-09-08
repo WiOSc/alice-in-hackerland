@@ -27,7 +27,6 @@ export function LeaderboardTable({
           <tr className="border-b border-white/10 font-mono text-xs uppercase tracking-wider text-white/40">
             <th className="px-4 py-3">Rank</th>
             <th className="px-4 py-3">Team</th>
-            <th className="px-4 py-3 text-right">This Round</th>
             <th className="px-4 py-3 text-right">Total</th>
           </tr>
         </thead>
@@ -49,9 +48,6 @@ export function LeaderboardTable({
                 {entry.teamId === currentTeamId && (
                   <span className="ml-2 font-mono text-xs text-red-400">(you)</span>
                 )}
-              </td>
-              <td className="px-4 py-3 text-right font-mono text-white/60">
-                {entry.activeRoundPoints > 0 ? `+${entry.activeRoundPoints}` : entry.activeRoundPoints}
               </td>
               <td className="px-4 py-3 text-right font-mono text-lg font-bold text-[#f0e6d3]">
                 {entry.totalPoints}

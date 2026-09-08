@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import CreateTeamForm from '@/components/admin/create-team-form';
 import TeamManager from '@/components/admin/team-manager';
 import ApiManager from '@/components/admin/api-manager';
@@ -16,16 +17,41 @@ const adminTabs: { key: Tab; label: string }[] = [
   { key: 'admin-tickets', label: 'Tickets' },
 ];
 
-type TeamTab = 'new-ticket' | 'my-tickets';
+type TeamTab = 'view-api' | 'new-ticket' | 'my-tickets';
 
 const teamTabs: { key: TeamTab; label: string }[] = [
+  { key: 'view-api', label: 'View APIs' },
   { key: 'new-ticket', label: 'New Ticket' },
   { key: 'my-tickets', label: 'My Tickets' },
 ];
 
 export default function DashboardClient({ decoded }: { decoded: any }) {
   const [adminTab, setAdminTab] = useState<Tab>('create-team');
-  const [teamTab, setTeamTab] = useState<TeamTab>('new-ticket');
+  const [teamTab, setTeamTab] = useState<TeamTab>('view-api');
+
+  const renderNavButtons = (tabs: { key: string; label: string }[], activeTab: string, setTab: (t: any) => void) => {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '220px', flexShrink: 0 }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            className={`aih-tab aih-mono ${activeTab === tab.key ? 'active' : ''}`}
+            onClick={() => setTab(tab.key)}
+            style={{ 
+              textAlign: 'left', 
+              padding: '0.75rem 1rem', 
+              borderBottom: 'none',
+              borderLeft: activeTab === tab.key ? '2px solid var(--aih-red)' : '2px solid transparent',
+              background: activeTab === tab.key ? 'rgba(236,231,216,0.03)' : 'transparent',
+              width: '100%'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <section className="aih-scope">
@@ -53,57 +79,59 @@ export default function DashboardClient({ decoded }: { decoded: any }) {
         </div>
 
         <div className="aih-main" style={{ alignItems: 'flex-start', textAlign: 'left', padding: '2rem 0' }}>
-          <h1 className="aih-display" style={{ fontSize: '40px' }}>Dashboard</h1>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '72rem', marginBottom: '2.5rem' }}>
+            <h1 className="aih-display" style={{ fontSize: '40px', margin: 0 }}>Dashboard</h1>
+            <Link href="/dashboard/leaderboard" className="aih-btn aih-mono" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>View Leaderboard</Link>
+          </div>
 
-          {decoded.role === 'admin' && (
-            <div style={{ width: '100%', maxWidth: '52rem' }}>
-              <div className="aih-tabs">
-                {adminTabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    className={`aih-tab aih-mono ${adminTab === tab.key ? 'active' : ''}`}
-                    onClick={() => setAdminTab(tab.key)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {adminTab === 'create-team' && (
-                <div>
-                  <p className="aih-sub" style={{ marginBottom: '1.5rem' }}>Create a new team account.</p>
-                  <CreateTeamForm />
-                </div>
-              )}
-              {adminTab === 'team-management' && <TeamManager />}
-              {adminTab === 'apis' && <ApiManager />}
-              {adminTab === 'admin-tickets' && <AdminTicketManager />}
+          <div style={{ display: 'flex', flexDirection: 'row', width: '100%', maxWidth: '72rem', gap: '2.5rem' }}>
+            
+            {/* Sidebar Navbar */}
+            <div style={{ borderRight: '1px solid rgba(139,134,125,0.15)', paddingRight: '1rem', minHeight: '50vh' }}>
+              {decoded.role === 'admin' 
+                ? renderNavButtons(adminTabs, adminTab, setAdminTab)
+                : renderNavButtons(teamTabs, teamTab, setTeamTab)
+              }
             </div>
-          )}
 
-          {decoded.role === 'team' && (
-            <div style={{ width: '100%', maxWidth: '42rem' }}>
-              <div className="aih-tabs">
-                {teamTabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    className={`aih-tab aih-mono ${teamTab === tab.key ? 'active' : ''}`}
-                    onClick={() => setTeamTab(tab.key)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {teamTab === 'new-ticket' && (
-                <div>
-                  <p className="aih-sub" style={{ marginBottom: '1.5rem' }}>Submit a support ticket.</p>
-                  <CreateTicket />
-                </div>
+            {/* Main Content Area */}
+            <div style={{ flex: 1, maxWidth: '52rem' }}>
+              {decoded.role === 'admin' && (
+                <>
+                  {adminTab === 'create-team' && (
+                    <div>
+                      <p className="aih-sub" style={{ marginBottom: '1.5rem', marginTop: 0 }}>Create a new team account.</p>
+                      <CreateTeamForm />
+                    </div>
+                  )}
+                  {adminTab === 'team-management' && <TeamManager />}
+                  {adminTab === 'apis' && <ApiManager />}
+                  {adminTab === 'admin-tickets' && <AdminTicketManager />}
+                </>
               )}
-              {teamTab === 'my-tickets' && <MyTicketList />}
+
+              {decoded.role === 'team' && (
+                <>
+                  {teamTab === 'new-ticket' && (
+                    <div>
+                      <p className="aih-sub" style={{ marginBottom: '1.5rem', marginTop: 0 }}>Submit a support ticket.</p>
+                      <CreateTicket />
+                    </div>
+                  )}
+                  {teamTab === 'my-tickets' && <MyTicketList />}
+                  {teamTab === 'view-api' && (
+                    <div>
+                      <p className="aih-sub" style={{ marginTop: 0 }}>View and manage your API keys.</p>
+                      <div className="aih-card" style={{ marginTop: '1.5rem' }}>
+                        <p className="aih-mono text-white/60">API management module coming soon.</p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          )}
+
+          </div>
         </div>
       </div>
     </section>
