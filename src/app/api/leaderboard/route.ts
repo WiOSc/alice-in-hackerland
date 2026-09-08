@@ -39,7 +39,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    //const admin = await requireAdmin();
+    const admin = await requireAdmin();
     const body = (await req.json()) as AssignPointsInput;
 
     if (!body.teamId || typeof body.points !== "number") {
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-/*
+
     const activeRound = await getActiveRound();
     if (!activeRound) {
       return NextResponse.json(
@@ -57,23 +57,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hardcode the round ID directly
-    const activeRound = { id: "round-1" };
-*/
-    const activeRound = await getActiveRound();
-    if (!activeRound) {
-      return NextResponse.json(
-        { error: "No round is currently active. Activate a round before assigning points." },
-        { status: 400 }
-      );
-}
-
     const team = await adjustTeamPoints({
       teamId: body.teamId,
       roundId: activeRound.id,
       points: body.points,
       note: body.note,
-      adminUid: "admin.uid",
+      adminUid: admin.uid,
     });
 
     const leaderboard = await getLeaderboard();

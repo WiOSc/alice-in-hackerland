@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { HeroPreview } from "@/components/ui/hero-preview";
 
 export default function Home() {
-  redirect("/dashboard/leaderboard");
+  return <HeroPreview />;
 }
