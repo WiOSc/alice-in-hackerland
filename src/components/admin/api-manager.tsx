@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { addApi, listApis } from '@/lib/firestore/apis';
+import { addApi, listApis, updateApi, deleteApi } from '@/lib/firestore/apis';
 
 export default function ApiManager() {
   const [api, setApi] = useState('');
@@ -9,6 +9,11 @@ export default function ApiManager() {
   const [apis, setApis] = useState<any[]>([]);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editApi, setEditApi] = useState('');
+  const [editApiName, setEditApiName] = useState('');
+  const [editProblemStatement, setEditProblemStatement] = useState('');
 
   async function loadApis() {
     try {
@@ -34,6 +39,40 @@ export default function ApiManager() {
     } catch (err: any) {
       setStatus('error');
       setMessage(err.message ?? 'Something went wrong');
+    }
+  }
+
+  function startEdit(a: any) {
+    setEditingId(a.id);
+    setEditApi(a.api);
+    setEditApiName(a.apiName);
+    setEditProblemStatement(a.problemStatement);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditApi('');
+    setEditApiName('');
+    setEditProblemStatement('');
+  }
+
+  async function handleUpdate(id: string) {
+    try {
+      await updateApi(id, editApi, editApiName, editProblemStatement);
+      cancelEdit();
+      loadApis();
+    } catch (err: any) {
+      alert(err.message ?? 'Failed to update API');
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this API? This cannot be undone.')) return;
+    try {
+      await deleteApi(id);
+      loadApis();
+    } catch (err: any) {
+      alert(err.message ?? 'Failed to delete API');
     }
   }
 
@@ -68,15 +107,36 @@ export default function ApiManager() {
                 <th>API Name</th>
                 <th>API</th>
                 <th>Problem Statement</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {apis.map((a) => (
-                <tr key={a.id}>
-                  <td>{a.apiName}</td>
-                  <td style={{ fontSize: '12px' }}>{a.api}</td>
-                  <td>{a.problemStatement}</td>
-                </tr>
+                editingId === a.id ? (
+                  <tr key={a.id}>
+                    <td><input className="aih-mono" value={editApiName} onChange={(e) => setEditApiName(e.target.value)} style={{ width: '100%', background: 'rgba(236,231,216,0.03)', border: '1px solid rgba(139,134,125,0.3)', color: '#ece7d8', padding: '0.25rem', fontSize: '12px' }} /></td>
+                    <td><input className="aih-mono" value={editApi} onChange={(e) => setEditApi(e.target.value)} style={{ width: '100%', background: 'rgba(236,231,216,0.03)', border: '1px solid rgba(139,134,125,0.3)', color: '#ece7d8', padding: '0.25rem', fontSize: '12px' }} /></td>
+                    <td><input className="aih-mono" value={editProblemStatement} onChange={(e) => setEditProblemStatement(e.target.value)} style={{ width: '100%', background: 'rgba(236,231,216,0.03)', border: '1px solid rgba(139,134,125,0.3)', color: '#ece7d8', padding: '0.25rem', fontSize: '12px' }} /></td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <button className="aih-table-btn" onClick={() => handleUpdate(a.id)}>Save</button>
+                        <button className="aih-table-btn" onClick={cancelEdit}>Cancel</button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={a.id}>
+                    <td>{a.apiName}</td>
+                    <td style={{ fontSize: '12px' }}>{a.api}</td>
+                    <td>{a.problemStatement}</td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <button className="aih-table-btn" onClick={() => startEdit(a)}>Edit</button>
+                        <button className="aih-table-btn" onClick={() => handleDelete(a.id)}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                )
               ))}
             </tbody>
           </table>

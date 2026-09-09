@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
-export function LoginLayoutUI({ children }: { children: React.ReactNode }) {
+export function LoginLayoutUI({ children, role = 'team' }: { children: React.ReactNode; role?: 'admin' | 'team' }) {
+  const eyebrow = role === 'admin' ? 'admin access' : 'team access';
+  const heading = role === 'admin' ? 'Login as admin' : 'Login as a team';
+  const sub = role === 'admin'
+    ? 'Enter your admin email and password to manage the event.'
+    : 'Enter the team code and passkey your squad was issued to reach the game arena.';
+
   return (
     <section className="aih-scope">
       <div className="aih-scanlines"></div>
@@ -30,11 +36,9 @@ export function LoginLayoutUI({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="aih-main aih-main-login">
-          <p className="aih-eyebrow aih-eyebrow-login aih-mono">team access</p>
-          <h1 className="aih-display aih-display-login">Login as a team</h1>
-          <p className="aih-sub">
-            Enter the team code and passkey your squad was issued to reach the game arena.
-          </p>
+          <p className="aih-eyebrow aih-eyebrow-login aih-mono">{eyebrow}</p>
+          <h1 className="aih-display aih-display-login">{heading}</h1>
+          <p className="aih-sub">{sub}</p>
           {children}
         </div>
       </div>

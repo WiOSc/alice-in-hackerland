@@ -3,7 +3,7 @@ import { LoginLayoutUI } from '@/components/ui/login-layout';
 
 export default function AdminLoginPage() {
   return (
-    <LoginLayoutUI>
+    <LoginLayoutUI role="admin">
       <LoginForm expectedRole="admin" />
     </LoginLayoutUI>
   );

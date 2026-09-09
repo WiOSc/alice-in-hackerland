@@ -11,16 +11,23 @@ export default function LoginForm({ expectedRole }: { expectedRole: 'admin' | 't
   const [message, setMessage] = useState('');
   const router = useRouter();
 
+  const isAdmin = expectedRole === 'admin';
+  const emailLabel = isAdmin ? 'Admin Email' : 'Team Email / Code';
+  const emailPlaceholder = isAdmin ? 'admin@example.com' : 'e.g. SQUAD-07';
+  const invalidMsg = isAdmin ? 'Enter both an email and a password.' : 'Enter both a team code and a passkey.';
+  const checkingMsg = isAdmin ? 'Checking credentials…' : 'Checking credentials…';
+  const successMsg = isAdmin ? 'Verified. Redirecting to the dashboard…' : 'Team verified. Redirecting to the arena…';
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!email || !password) {
       setStatus('error');
-      setMessage('Enter both a team code and a passkey.');
+      setMessage(invalidMsg);
       return;
     }
 
     setStatus('pending');
-    setMessage('Checking credentials…');
+    setMessage(checkingMsg);
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
@@ -40,7 +47,7 @@ export default function LoginForm({ expectedRole }: { expectedRole: 'admin' | 't
       });
 
       setStatus('success');
-      setMessage(`Team verified. Redirecting to the arena…`);
+      setMessage(successMsg);
       setTimeout(() => {
         router.push('/dashboard');
       }, 900);
@@ -53,12 +60,12 @@ export default function LoginForm({ expectedRole }: { expectedRole: 'admin' | 't
   return (
     <form className="aih-card" onSubmit={handleLogin} noValidate>
       <div className="aih-field">
-        <label className="aih-mono" htmlFor="teamCode">Team Email / Code</label>
+        <label className="aih-mono" htmlFor="teamCode">{emailLabel}</label>
         <input 
           className="aih-mono" 
           type="text" 
           id="teamCode" 
-          placeholder="e.g. SQUAD-07" 
+          placeholder={emailPlaceholder} 
           autoComplete="off"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

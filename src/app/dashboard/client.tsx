@@ -7,13 +7,16 @@ import ApiManager from '@/components/admin/api-manager';
 import AdminTicketManager from '@/components/admin/ticket-manager';
 import CreateTicket from '@/components/tickets/create-ticket';
 import MyTicketList from '@/components/tickets/ticket-list';
+import AssignApisPanel from '@/components/admin/AssignApisPanel';
+import ViewAssignedApi from '@/components/team/ViewAssignedApi';
 
-type Tab = 'create-team' | 'team-management' | 'apis' | 'admin-tickets';
+type Tab = 'create-team' | 'team-management' | 'apis' | 'assign-apis' | 'admin-tickets';
 
 const adminTabs: { key: Tab; label: string }[] = [
   { key: 'create-team', label: 'Create Team' },
   { key: 'team-management', label: 'Teams' },
   { key: 'apis', label: 'APIs' },
+  { key: 'assign-apis', label: 'Assign APIs' },
   { key: 'admin-tickets', label: 'Tickets' },
 ];
 
@@ -106,6 +109,12 @@ export default function DashboardClient({ decoded }: { decoded: any }) {
                   )}
                   {adminTab === 'team-management' && <TeamManager />}
                   {adminTab === 'apis' && <ApiManager />}
+                  {adminTab === 'assign-apis' && (
+                    <div>
+                      <p className="aih-sub" style={{ marginBottom: '1.5rem', marginTop: 0 }}>Distribute APIs across all teams.</p>
+                      <AssignApisPanel />
+                    </div>
+                  )}
                   {adminTab === 'admin-tickets' && <AdminTicketManager />}
                 </>
               )}
@@ -121,9 +130,9 @@ export default function DashboardClient({ decoded }: { decoded: any }) {
                   {teamTab === 'my-tickets' && <MyTicketList />}
                   {teamTab === 'view-api' && (
                     <div>
-                      <p className="aih-sub" style={{ marginTop: 0 }}>View and manage your API keys.</p>
-                      <div className="aih-card" style={{ marginTop: '1.5rem' }}>
-                        <p className="aih-mono text-white/60">API management module coming soon.</p>
+                      <p className="aih-sub" style={{ marginTop: 0 }}>Your assigned API.</p>
+                      <div style={{ marginTop: '1.5rem' }}>
+                        <ViewAssignedApi />
                       </div>
                     </div>
                   )}
