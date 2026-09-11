@@ -28,6 +28,7 @@ export async function listTeams() {
       points: data.points ?? 0,
       qualified: data.qualified ?? true,
       createdAt: data.createdAt?.toDate?.()?.toISOString() ?? '',
+      assignedApi: data.assignedApi ?? null,
     };
   });
 }

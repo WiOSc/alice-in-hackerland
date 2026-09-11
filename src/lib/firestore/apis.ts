@@ -86,3 +86,38 @@ export async function deleteApi(id: string) {
   await adminDb.collection('apis').doc(id).delete();
   return { id };
 }
+
+export async function unassignAllApis() {
+  await getAdminDecoded();
+
+  const teamsSnapshot = await adminDb.collection('users').where('role', '==', 'team').get();
+  if (teamsSnapshot.empty) throw new Error('No teams found.');
+
+  const { FieldValue } = await import('firebase-admin/firestore');
+  const batch = adminDb.batch();
+  teamsSnapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, { assignedApi: FieldValue.delete() });
+  });
+  await batch.commit();
+
+  return { teamsUnassigned: teamsSnapshot.size };
+}
+
+export async function assignApiToTeam(teamUid: string, apiId: string) {
+  await getAdminDecoded();
+
+  const apiDoc = await adminDb.collection('apis').doc(apiId).get();
+  if (!apiDoc.exists) throw new Error('API not found.');
+  const apiData = apiDoc.data()!;
+
+  await adminDb.collection('users').doc(teamUid).update({
+    assignedApi: {
+      id: apiDoc.id,
+      api: apiData.api,
+      apiName: apiData.apiName,
+      problemStatement: apiData.problemStatement,
+    },
+  });
+
+  return { success: true };
+}
