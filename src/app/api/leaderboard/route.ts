@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser } from "../../../lib/auth/requireUser";
 import { requireAdmin } from "../../../lib/auth/requireAdmin";
 import { getLeaderboard } from "../../../lib/firestore/leaderboard";
 import { adjustTeamPoints } from "../../../lib/firestore/teams";
 import { getActiveRound } from "../../../lib/firestore/rounds";
 import type { AssignPointsInput } from "../../../types/leaderboard";
+
+export const dynamic = 'force-dynamic';
+
 /*
 export async function GET() {
   try {
