@@ -13,15 +13,30 @@ function getAdminApp(): App {
   const existing = getApps();
   if (existing.length > 0) return existing[0];
 
-  return initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY
-        ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/^"|"$/g, '')
-        : undefined,
-    }),
-  });
+  let formattedKey = process.env.FIREBASE_PRIVATE_KEY;
+  if (formattedKey) {
+    formattedKey = formattedKey.replace(/\\n/g, '\n');
+    if (formattedKey.startsWith('"') && formattedKey.endsWith('"')) {
+      formattedKey = formattedKey.slice(1, -1);
+    }
+  }
+
+  try {
+    return initializeApp({
+      credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: formattedKey,
+      }),
+    });
+  } catch (err: any) {
+    console.error("IREBASE ADMIN INIT FAILED ");
+    console.error("Error:", err.message);
+    console.error("Project ID:", process.env.FIREBASE_PROJECT_ID);
+    console.error("Client Email:", process.env.FIREBASE_CLIENT_EMAIL);
+    console.error("Private Key snippet:", process.env.FIREBASE_PRIVATE_KEY?.substring(0, 40));
+    throw err;
+  }
 }
 
 export const adminApp = getAdminApp();
