@@ -30,7 +30,7 @@ function getAdminApp(): App {
       }),
     });
   } catch (err: any) {
-    console.error("IREBASE ADMIN INIT FAILED ");
+    console.error("FIREBASE ADMIN INIT FAILED ");
     console.error("Error:", err.message);
     console.error("Project ID:", process.env.FIREBASE_PROJECT_ID);
     console.error("Client Email:", process.env.FIREBASE_CLIENT_EMAIL);
