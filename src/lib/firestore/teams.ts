@@ -13,6 +13,20 @@ async function getAdminDecoded() {
   return decoded;
 }
 
+export async function getTeamsForLeaderboard() {
+  const snapshot = await adminDb.collection('users').where('role', '==', 'team').get();
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      uid: doc.id,
+      teamId: data.teamId ?? '',
+      teamName: data.teamName ?? '',
+      points: data.points ?? 0,
+      qualified: data.qualified ?? true,
+    };
+  });
+}
+
 export async function listTeams() {
   await getAdminDecoded();
   const snapshot = await adminDb.collection('users').where('role', '==', 'team').get();

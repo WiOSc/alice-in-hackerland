@@ -1,4 +1,4 @@
-import { listTeams, getRoundPointsForTeam } from "./teams";
+import { getTeamsForLeaderboard, getRoundPointsForTeam } from "./teams";
 import { getActiveRound } from "./rounds";
 import type { LeaderboardEntry, RankColor } from "../../types/leaderboard";
 
@@ -9,7 +9,7 @@ function getRankColor(rank: number, totalTeams: number): RankColor {
 }
 
 export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
-  const [teams, activeRound] = await Promise.all([listTeams(), getActiveRound()]);
+  const [teams, activeRound] = await Promise.all([getTeamsForLeaderboard(), getActiveRound()]);
 
   // @ts-ignore - bypassing strict type checks as teams now have `points`, `uid` and `teamName`
   const sorted = [...teams].sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
