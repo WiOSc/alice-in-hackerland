@@ -195,16 +195,20 @@ export default function TeamManager() {
                     <td colSpan={8} style={{ padding: '0.75rem 1.25rem 1rem 2.5rem' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem 2rem', maxWidth: '700px' }}>
                         <div>
-                          <div className="aih-mono" style={{ fontSize: '10px', color: 'rgba(236,231,216,0.4)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Problem Statement</div>
+                          <div className="aih-mono" style={{ fontSize: '10px', color: 'rgba(236,231,216,0.4)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Problem Statement Name</div>
                           <div style={{ fontSize: '13px', color: '#ece7d8', fontWeight: 500 }}>{t.assignedApi.apiName}</div>
                         </div>
-                        <div>
-                          <div className="aih-mono" style={{ fontSize: '10px', color: 'rgba(236,231,216,0.4)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>API</div>
-                          <div style={{ fontSize: '12px', color: 'rgba(236,231,216,0.7)', fontFamily: 'monospace' }}>{t.assignedApi.api}</div>
-                        </div>
                         <div style={{ gridColumn: '1 / -1' }}>
-                          <div className="aih-mono" style={{ fontSize: '10px', color: 'rgba(236,231,216,0.4)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Description</div>
-                          <div style={{ fontSize: '12px', color: 'rgba(236,231,216,0.65)', lineHeight: '1.6' }}>{t.assignedApi.problemStatement}</div>
+                          <div className="aih-mono" style={{ fontSize: '10px', color: 'rgba(236,231,216,0.4)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>API Link</div>
+                          <a 
+                            href={t.assignedApi.api} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="aih-mono" 
+                            style={{ fontSize: '12px', color: 'var(--aih-green)', textDecoration: 'underline', wordBreak: 'break-all' }}
+                          >
+                            {t.assignedApi.api}
+                          </a>
                         </div>
                       </div>
                     </td>

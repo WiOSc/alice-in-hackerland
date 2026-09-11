@@ -40,11 +40,15 @@ export default function LoginForm({ expectedRole }: { expectedRole: 'admin' | 't
         return;
       }
 
-      await fetch('/api/session', {
+      const res = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken: idTokenResult.token }),
       });
+
+      if (!res.ok) {
+        throw new Error('Failed to create secure session');
+      }
 
       setStatus('success');
       setMessage(successMsg);
@@ -52,8 +56,9 @@ export default function LoginForm({ expectedRole }: { expectedRole: 'admin' | 't
         router.push('/dashboard');
       }, 900);
     } catch (err: any) {
+      console.error(err);
       setStatus('error');
-      setMessage('Invalid email or password');
+      setMessage(err.message || 'Invalid email or password');
     }
   }
 

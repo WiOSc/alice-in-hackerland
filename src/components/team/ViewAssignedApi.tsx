@@ -30,12 +30,21 @@ export default function ViewAssignedApi() {
         <p className="aih-mono">{api.apiName}</p>
       </div>
       <div className="aih-field">
-        <label className="aih-mono">Endpoint</label>
-        <p className="aih-mono" style={{ fontSize: '12px' }}>{api.api}</p>
-      </div>
-      <div className="aih-field">
-        <label className="aih-mono">Problem Statement</label>
-        <p className="aih-mono">{api.problemStatement}</p>
+        <label className="aih-mono">API Link</label>
+        <a 
+          href={api.api} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="aih-mono" 
+          style={{ 
+            fontSize: '13px', 
+            color: 'var(--aih-green)', 
+            textDecoration: 'underline',
+            wordBreak: 'break-all'
+          }}
+        >
+          {api.api}
+        </a>
       </div>
     </div>
   );
